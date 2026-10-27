@@ -46,6 +46,27 @@ FIELD_PATTERNS = {
     "intake": [
         r"(?:intake|sanctioned\s+intake|approved\s+intake)\s*:?\s*(\d{1,4})",
     ],
+    "land_area_acres": [
+        r"(?:total\s+)?(?:land\s+area|area\s+of\s+land|extent\s+of\s+land|land\s+measuring)\s*:?\s*(\d+(?:\.\d+)?)\s*(?:acres?|acre)",
+        r"(\d+(?:\.\d+)?)\s*(?:acres?|acre)\s+(?:of\s+land|land)",
+        r"(?:land\s+area|area)\s*:?\s*(\d+(?:\.\d+)?)\s*(?:hec|hectares?)",
+    ],
+    "survey_number": [
+        r"(?:survey\s*(?:no|number|\#)|sy\.?\s*no\.?|khasra\s*(?:no|number|\#)|gat\s*(?:no|number|\#))\s*:?\s*([A-Z0-9/,\s-]{2,40})",
+        r"(?:plot\s*(?:no|number|\#))\s*:?\s*([A-Z0-9/,\s-]{2,30})",
+    ],
+    "built_up_area_sqm": [
+        r"(?:built(?:-|\s*)up\s+area|carpet\s+area|total\s+covered\s+area|floor\s+area)\s*:?\s*(\d+(?:,\d+)?(?:\.\d+)?)\s*(?:sq\.?\s*m(?:trs?)?|sqm|sq\s*meters?|square\s+met(?:ers?|res?))",
+        r"(?:built(?:-|\s*)up\s+area|carpet\s+area|floor\s+area)\s*:?\s*(\d+(?:,\d+)?(?:\.\d+)?)\s*(?:sq\.?\s*ft|sqft|square\s+feet)",
+    ],
+    "society_trust_name": [
+        r"(?:society|trust|management|foundation|running\s+society)\s*(?:name|:)\s*([A-Z][^\n]{3,80})",
+        r"(?:managed\s+by|established\s+by|under\s+the\s+aegis\s+of)\s*:?\s*([A-Z][^\n]{3,80})",
+    ],
+    "faculty_count": [
+        r"(?:total\s+faculty|teaching\s+staff|faculty\s+members?|number\s+of\s+faculty)\s*:?\s*(\d{1,4})",
+        r"(?:faculty|staff)\s+strength\s*:?\s*(\d{1,4})",
+    ],
 }
 
 

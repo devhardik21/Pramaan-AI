@@ -162,28 +162,60 @@ export default function FindingsPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-sm font-bold text-slate-900">{finding.title}</h3>
+                      <h3 className="text-sm font-bold text-slate-900">{finding.checkName || finding.title || 'Regulatory Finding'}</h3>
                       <span className={`badge ${SEVERITY_CLASSES[finding.severity] || 'badge-neutral'} uppercase text-[10px]`}>
                         {finding.severity}
                       </span>
                       <span className={`badge ${FINDING_STATUS_CLASSES[finding.status] || 'badge-neutral'} text-[10px]`}>
                         {finding.status}
                       </span>
+                      {finding.ruleId && (
+                        <span className="badge badge-neutral text-[10px] font-mono">
+                          {typeof finding.ruleId === 'object' ? finding.ruleId.name || finding.ruleId.ruleId : finding.ruleId}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-                      {finding.description}
+                    <p className="text-xs text-slate-700 mt-1.5 leading-relaxed">
+                      {finding.explanation || finding.description}
                     </p>
 
+                    {/* Evidence & Comparison Box */}
+                    {(finding.observedValue || finding.expectedValue) && (
+                      <div className="mt-2.5 p-2.5 rounded-lg bg-white/90 border border-slate-200 text-xs space-y-1">
+                        {finding.observedValue && (
+                          <div className="flex items-start gap-1.5">
+                            <span className="font-semibold text-slate-600 flex-shrink-0">Observed Evidence:</span>
+                            <span className="font-mono text-red-600 break-all">{typeof finding.observedValue === 'object' ? JSON.stringify(finding.observedValue) : String(finding.observedValue)}</span>
+                          </div>
+                        )}
+                        {finding.expectedValue && (
+                          <div className="flex items-start gap-1.5">
+                            <span className="font-semibold text-slate-600 flex-shrink-0">AICTE Regulatory Standard:</span>
+                            <span className="font-mono text-emerald-700">{typeof finding.expectedValue === 'object' ? JSON.stringify(finding.expectedValue) : String(finding.expectedValue)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="mt-3 flex flex-wrap gap-4 text-[11px] text-slate-500">
-                      {finding.applicationId && (
+                      {(finding.application || finding.applicationId) && (
                         <span>
                           <span className="font-semibold text-slate-700">Application: </span>
                           <Link
-                            to={`/applications/${finding.applicationId._id || finding.applicationId}`}
+                            to={`/applications/${(finding.application?._id || finding.applicationId?._id || finding.application || finding.applicationId)}`}
                             className="text-primary hover:underline font-mono"
                           >
-                            {finding.applicationId.applicationNumber || (typeof finding.applicationId === 'string' ? finding.applicationId.substring(0, 8) : 'View Dossier')}
+                            {finding.application?.applicationNumber || finding.applicationId?.applicationNumber || 'View Dossier'}
                           </Link>
+                          {finding.application?.institution?.name && (
+                            <span className="text-slate-400 ml-1">({finding.application.institution.name})</span>
+                          )}
+                        </span>
+                      )}
+                      {finding.document && (
+                        <span>
+                          <span className="font-semibold text-slate-700">Document: </span>
+                          {finding.document.originalFilename || 'Document'}
                         </span>
                       )}
                       {finding.findingType && (
@@ -207,9 +239,9 @@ export default function FindingsPage() {
                   </div>
                 </div>
 
-                {finding.applicationId && (
+                {(finding.application || finding.applicationId) && (
                   <Link
-                    to={`/applications/${finding.applicationId._id || finding.applicationId}`}
+                    to={`/applications/${(finding.application?._id || finding.applicationId?._id || finding.application || finding.applicationId)}`}
                     className="btn btn-secondary btn-sm text-[11px] py-1.5 px-3 self-start inline-flex items-center gap-1"
                   >
                     Open Dossier <ExternalLink size={12} />

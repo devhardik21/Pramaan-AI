@@ -4,6 +4,7 @@ const {
   getDocument,
   downloadDocument,
   correctField,
+  reprocessDocument,
 } = require('../controllers/document.controller');
 const { verifyDocument, getVerifications } = require('../controllers/verification.controller');
 const { authenticate, authorize } = require('../middleware/auth');
@@ -13,6 +14,7 @@ router.use(authenticate);
 router.get('/:id', getDocument);
 router.get('/:id/download', downloadDocument);
 router.patch('/:id/fields/:fieldId', correctField);
+router.post('/:id/reprocess', reprocessDocument);
 router.post('/:id/verify', authorize('reviewer', 'admin'), verifyDocument);
 router.get('/:id/verifications', getVerifications);
 

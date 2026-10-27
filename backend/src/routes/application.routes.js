@@ -7,6 +7,7 @@ const {
   getChecklist,
   updateStatus,
   getFindings,
+  getAllFindings,
   getAudit,
   requestRectification,
 } = require('../controllers/application.controller');
@@ -16,6 +17,9 @@ const { authenticate, authorize } = require('../middleware/auth');
 const { documentUpload, handleUploadError } = require('../middleware/upload');
 
 router.use(authenticate);
+
+// Global findings monitor (placed before /:id routes)
+router.get('/findings/all', getAllFindings);
 
 router.post('/', authorize('institution_user', 'admin'), createApplication);
 router.get('/', listApplications);
