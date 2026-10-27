@@ -3,7 +3,7 @@
 
 > **Smart India Hackathon (SIH) Solution**  
 > *Advisory & Decision-Support System for Institutional Scrutiny and Approval Process Handbook (APH) Compliance.*
-
+l
 ---
 
 ## 🌟 Executive Summary

@@ -170,7 +170,10 @@ const downloadDocument = async (req, res, next) => {
 // PATCH /api/documents/:id/fields/:fieldId
 const correctField = async (req, res, next) => {
   try {
-    const { correctedValue, correctionNote } = req.body;
+    // Accept either 'correctionNote' or 'reason' for backwards compatibility
+    const { correctedValue, correctionNote, reason } = req.body;
+    const noteText = correctionNote || reason || '';
+
     const field = await ExtractedField.findOne({
       _id: req.params.fieldId,
       document: req.params.id,
@@ -178,7 +181,7 @@ const correctField = async (req, res, next) => {
     if (!field) return res.status(404).json({ success: false, message: 'Field not found' });
 
     field.correctedValue = correctedValue;
-    field.correctionNote = correctionNote;
+    field.correctionNote = noteText;
     field.correctedBy = req.user._id;
     field.correctedAt = new Date();
     field.status = 'manually_corrected';
@@ -194,7 +197,7 @@ const correctField = async (req, res, next) => {
         fieldName: field.fieldName,
         oldValue: field.extractedValue,
         newValue: correctedValue,
-        correctionNote,
+        correctionNote: noteText,
       },
     });
 
@@ -225,7 +228,64 @@ const listApplicationDocuments = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    res.json({ success: true, data: docs });
+    // Eagerly join extracted fields for each document
+    const docIds = docs.map((d) => d._id);
+    const allFields = await ExtractedField.find({ document: { $in: docIds } }).lean();
+
+    // Group fields by document ID
+    const fieldsByDoc = {};
+    for (const f of allFields) {
+      const key = f.document.toString();
+      if (!fieldsByDoc[key]) fieldsByDoc[key] = [];
+      fieldsByDoc[key].push(f);
+    }
+
+    const enrichedDocs = docs.map((d) => ({
+      ...d,
+      extractedFields: fieldsByDoc[d._id.toString()] || [],
+    }));
+
+    res.json({ success: true, data: enrichedDocs });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/documents/:id/reprocess
+const reprocessDocument = async (req, res, next) => {
+  try {
+    const doc = await Document.findById(req.params.id).populate('application', 'institution _id');
+    if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
+
+    if (
+      req.user.role === 'institution_user' &&
+      doc.application.institution.toString() !== req.user.institution?.toString()
+    ) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    // Reset status
+    await Document.findByIdAndUpdate(doc._id, {
+      processingStatus: 'pending',
+      processingError: null,
+    });
+
+    // Re-trigger async processing
+    triggerProcessing(doc._id, doc.storagePath, doc.mimeType, doc.application._id).catch((err) =>
+      console.error('[PROCESSOR] Reprocess dispatch error:', err.message)
+    );
+
+    await logAuditEvent({
+      eventType: 'document_reprocessed',
+      actor: req.user._id,
+      actorEmail: req.user.email,
+      actorRole: req.user.role,
+      application: doc.application._id,
+      document: doc._id,
+      detail: { originalFilename: doc.originalFilename },
+    });
+
+    res.json({ success: true, message: 'Document queued for re-processing' });
   } catch (err) {
     next(err);
   }
@@ -237,4 +297,5 @@ module.exports = {
   downloadDocument,
   correctField,
   listApplicationDocuments,
+  reprocessDocument,
 };

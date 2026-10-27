@@ -188,6 +188,38 @@ const getFindings = async (req, res, next) => {
   }
 };
 
+// GET /api/applications/findings/all (Global discrepancy feed)
+const getAllFindings = async (req, res, next) => {
+  try {
+    const { status, severity, search } = req.query;
+    const filter = {};
+    if (status) filter.status = status;
+    if (severity) filter.severity = severity;
+    if (search) {
+      filter.$or = [
+        { checkName: { $regex: search, $options: 'i' } },
+        { explanation: { $regex: search, $options: 'i' } },
+        { ruleId: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const findings = await Finding.find(filter)
+      .populate('document', 'originalFilename documentType')
+      .populate({
+        path: 'application',
+        select: 'applicationNumber academicYear institution status',
+        populate: { path: 'institution', select: 'name aicteId' }
+      })
+      .sort({ severity: 1, createdAt: -1 })
+      .limit(100)
+      .lean();
+
+    res.json({ success: true, data: { findings } });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // GET /api/applications/:id/audit
 const getAudit = async (req, res, next) => {
   try {
@@ -256,6 +288,7 @@ module.exports = {
   getChecklist,
   updateStatus,
   getFindings,
+  getAllFindings,
   getAudit,
   requestRectification,
 };

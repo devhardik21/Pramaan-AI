@@ -227,6 +227,148 @@ const runChecks = async (app, checklist, rules, validationRunId) => {
     }
   }
 
+  // 7. Cross-Document Land Area Consistency (Land Deed vs Building Plan vs Affidavit)
+  const landAreaFields = fields.filter(
+    (f) => f.fieldName === 'land_area_acres' && (f.correctedValue ?? f.extractedValue)
+  );
+  if (landAreaFields.length > 1) {
+    const numericAreas = landAreaFields.map((f) => {
+      const val = parseFloat(f.correctedValue ?? f.extractedValue);
+      const doc = documents.find((d) => d._id.toString() === f.document.toString());
+      return { val, docName: doc?.originalFilename || 'Document', docType: doc?.documentType || 'unknown', docId: f.document };
+    }).filter((item) => !isNaN(item.val));
+
+    if (numericAreas.length > 1) {
+      const minArea = Math.min(...numericAreas.map((a) => a.val));
+      const maxArea = Math.max(...numericAreas.map((a) => a.val));
+      const discrepancyRatio = (maxArea - minArea) / (minArea || 1);
+
+      // Flag if difference exceeds 5%
+      if (discrepancyRatio > 0.05) {
+        const details = numericAreas.map((a) => `${a.docName} (${a.docType}): ${a.val} acres`).join(' vs ');
+        findings.push(buildFinding(appId, validationRunId, numericAreas[0].docId, {
+          checkName: 'Cross-Document Land Acreage Mismatch',
+          ruleId: 'LAND-001',
+          ruleVersion: '1.0.0',
+          findingType: 'mismatch',
+          severity: 'critical',
+          explanation: `Discrepancy detected in reported land area across documents: ${details}. (AICTE Chapter I Clause 1.4 requires strict acreage congruence across title deeds and sanction plans).`,
+          expectedValue: `${numericAreas[0].val} acres`,
+          observedValue: details,
+          suggestedAction: 'Reconcile land deed, building sanction plan, and notary affidavit acreage figures.',
+          requiresHumanReview: true,
+        }));
+      }
+    }
+  }
+
+  // 8. Survey Number & Khasra Consistency across Land Documents
+  const surveyFields = fields.filter(
+    (f) => f.fieldName === 'survey_number' && (f.correctedValue ?? f.extractedValue)
+  );
+  if (surveyFields.length > 1) {
+    const surveyValues = surveyFields.map((f) => {
+      const raw = String(f.correctedValue ?? f.extractedValue).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      const doc = documents.find((d) => d._id.toString() === f.document.toString());
+      return { raw, original: f.correctedValue ?? f.extractedValue, docName: doc?.originalFilename || 'Document', docId: f.document };
+    });
+
+    const uniqueSurveys = [...new Set(surveyValues.map((s) => s.raw))];
+    if (uniqueSurveys.length > 1) {
+      const summary = surveyValues.map((s) => `${s.docName}: "${s.original}"`).join(' | ');
+      findings.push(buildFinding(appId, validationRunId, surveyValues[0].docId, {
+        checkName: 'Survey / Khasra Number Discrepancy',
+        ruleId: 'SRV-001',
+        ruleVersion: '1.0.0',
+        findingType: 'mismatch',
+        severity: 'critical',
+        explanation: `Survey or Khasra numbers do not match across land/building records: ${summary}.`,
+        observedValue: summary,
+        suggestedAction: 'Verify that all submitted documents pertain to the identical land parcel and survey numbers.',
+        requiresHumanReview: true,
+      }));
+    }
+  }
+
+  // 9. Society / Trust Name Uniformity
+  const societyFields = fields.filter(
+    (f) => f.fieldName === 'society_trust_name' && (f.correctedValue ?? f.extractedValue)
+  );
+  if (societyFields.length > 1) {
+    const societies = societyFields.map((f) => {
+      const raw = String(f.correctedValue ?? f.extractedValue).trim().toLowerCase().replace(/\s+/g, ' ');
+      const doc = documents.find((d) => d._id.toString() === f.document.toString());
+      return { raw, original: f.correctedValue ?? f.extractedValue, docName: doc?.originalFilename || 'Document', docId: f.document };
+    });
+
+    const uniqueSocieties = [...new Set(societies.map((s) => s.raw))];
+    if (uniqueSocieties.length > 1) {
+      const summary = societies.map((s) => `${s.docName}: "${s.original}"`).join(' vs ');
+      findings.push(buildFinding(appId, validationRunId, societies[0].docId, {
+        checkName: 'Sponsoring Society / Trust Name Variance',
+        ruleId: 'SOC-001',
+        ruleVersion: '1.0.0',
+        findingType: 'mismatch',
+        severity: 'major',
+        explanation: `Different Sponsoring Body or Trust names detected across records: ${summary}.`,
+        observedValue: summary,
+        suggestedAction: 'Ensure society/trust registration certificate matches the entity mentioned in land deeds.',
+        requiresHumanReview: true,
+      }));
+    }
+  }
+
+  // 10. Built-Up Area Sanction vs Minimum Norms
+  const builtUpFields = fields.filter(
+    (f) => f.fieldName === 'built_up_area_sqm' && (f.correctedValue ?? f.extractedValue)
+  );
+  for (const bf of builtUpFields) {
+    const rawVal = String(bf.correctedValue ?? bf.extractedValue).replace(/,/g, '');
+    const area = parseFloat(rawVal);
+    if (!isNaN(area) && area < 500) {
+      const doc = documents.find((d) => d._id.toString() === bf.document.toString());
+      findings.push(buildFinding(appId, validationRunId, bf.document, {
+        checkName: 'Insufficient Built-Up Area Under AICTE Norms',
+        ruleId: 'BLD-001',
+        ruleVersion: '1.0.0',
+        findingType: 'anomaly',
+        severity: 'critical',
+        explanation: `Reported built-up area in ${doc?.originalFilename || 'Document'} is ${area} sq.m, which is below standard AICTE institutional infrastructure threshold (minimum 500 sq.m required for instructional/administrative block).`,
+        expectedValue: '≥ 500 sq.m',
+        observedValue: `${area} sq.m`,
+        suggestedAction: 'Review building floor plan or occupancy certificate figures for accuracy.',
+        requiresHumanReview: true,
+      }));
+    }
+  }
+
+  // 11. Institution Name Variance Across Documents
+  const instNameFields = fields.filter(
+    (f) => f.fieldName === 'institution_name' && (f.correctedValue ?? f.extractedValue)
+  );
+  if (instNameFields.length > 1) {
+    const names = instNameFields.map((f) => {
+      const norm = String(f.correctedValue ?? f.extractedValue).toLowerCase().replace(/[^a-z0-9]/g, '');
+      const doc = documents.find((d) => d._id.toString() === f.document.toString());
+      return { norm, original: f.correctedValue ?? f.extractedValue, docName: doc?.originalFilename || 'Document' };
+    });
+    const uniqueNormNames = [...new Set(names.map((n) => n.norm))];
+    if (uniqueNormNames.length > 1) {
+      const summary = names.map((n) => `${n.docName}: "${n.original}"`).join(' vs ');
+      findings.push(buildFinding(appId, validationRunId, null, {
+        checkName: 'Institution Name Spelling / Alias Variance',
+        ruleId: 'NAM-001',
+        ruleVersion: '1.0.0',
+        findingType: 'mismatch',
+        severity: 'minor',
+        explanation: `Subtle variance detected in institution name across documents: ${summary}.`,
+        observedValue: summary,
+        suggestedAction: 'Verify official government name of the college across affiliation certificates and NOCs.',
+        requiresHumanReview: true,
+      }));
+    }
+  }
+
   return findings;
 };
 

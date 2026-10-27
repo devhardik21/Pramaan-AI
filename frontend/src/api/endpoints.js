@@ -31,6 +31,7 @@ export const documentsAPI = {
   get: (id) => api.get(`/documents/${id}`),
   download: (id) => api.get(`/documents/${id}/download`, { responseType: 'blob' }),
   correctField: (docId, fieldId, data) => api.patch(`/documents/${docId}/fields/${fieldId}`, data),
+  reprocess: (id) => api.post(`/documents/${id}/reprocess`),
   verify: (id, data) => api.post(`/documents/${id}/verify`, data),
   getVerifications: (id) => api.get(`/documents/${id}/verifications`),
 };
