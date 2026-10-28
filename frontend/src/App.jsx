@@ -17,6 +17,7 @@ import RectificationsPage from './pages/RectificationsPage';
 import AuditPage from './pages/AuditPage';
 import AdminRulesPage from './pages/AdminRulesPage';
 import AdminUsersPage from './pages/AdminUsersPage';
+import AdminInstitutionsPage from './pages/AdminInstitutionsPage';
 
 function App() {
   return (
@@ -158,6 +159,17 @@ function App() {
               <ProtectedRoute roles={['admin']}>
                 <AppLayout>
                   <AdminUsersPage />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/institutions"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <AppLayout>
+                  <AdminInstitutionsPage />
                 </AppLayout>
               </ProtectedRoute>
             }

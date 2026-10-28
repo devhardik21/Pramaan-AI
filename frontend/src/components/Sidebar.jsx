@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FolderOpen, Upload, FileSearch, AlertTriangle,
   ShieldCheck, BookOpen, Image, ArrowLeftRight, History,
-  Settings, LogOut, ChevronRight, Layers
+  Settings, LogOut, ChevronRight, Layers, Building2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -39,8 +39,9 @@ const navGroups = [
 ];
 
 const adminItems = [
-  { to: '/admin/rules', label: 'Rule Config', icon: Settings },
+  { to: '/admin/institutions', label: 'Institutions', icon: Building2 },
   { to: '/admin/users', label: 'User Management', icon: Layers },
+  { to: '/admin/rules', label: 'Rule Config', icon: Settings },
 ];
 
 export default function Sidebar() {

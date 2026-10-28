@@ -19,6 +19,10 @@ const applicationSchema = new mongoose.Schema(
       required: true,
     },
     academicYear: { type: String, required: true, trim: true },
+    applicationType: { type: String, trim: true },
+    institutionDetails: { type: mongoose.Schema.Types.Mixed },
+    contactPerson: { type: mongoose.Schema.Types.Mixed },
+    programmes: [{ type: String }],
     status: {
       type: String,
       enum: [

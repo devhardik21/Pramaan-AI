@@ -13,6 +13,7 @@ export const dashboardAPI = {
 export const applicationsAPI = {
   create: (data) => api.post('/applications', data),
   list: (params) => api.get('/applications', { params }),
+  listCategories: () => api.get('/applications/categories'),
   get: (id) => api.get(`/applications/${id}`),
   getChecklist: (id) => api.get(`/applications/${id}/checklist`),
   updateStatus: (id, data) => api.patch(`/applications/${id}/status`, data),
@@ -56,4 +57,6 @@ export const adminAPI = {
   updateRule: (id, data) => api.patch(`/admin/rules/${id}`, data),
   listChecklists: () => api.get('/admin/checklists'),
   createChecklist: (data) => api.post('/admin/checklists', data),
+  listInstitutions: () => api.get('/admin/institutions'),
 };
+

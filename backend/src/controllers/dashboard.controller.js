@@ -13,7 +13,8 @@ const getSummary = async (req, res, next) => {
     if (role === 'institution_user') {
       appFilter.institution = instId;
     } else if (role === 'reviewer') {
-      appFilter.assignedReviewer = userId;
+      const hasAssigned = await Application.exists({ assignedReviewer: userId });
+      if (hasAssigned) appFilter.assignedReviewer = userId;
     }
     // admin sees all
 

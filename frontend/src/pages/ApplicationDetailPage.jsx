@@ -261,7 +261,7 @@ export default function ApplicationDetailPage() {
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              {application?.institutionId?.name || application?.institutionDetails?.name || 'Institution'} &bull; Academic Year: {application?.academicYear || '2026-2027'}
+              {application?.institution?.name || application?.institutionId?.name || application?.institutionDetails?.name || 'Institution'} &bull; Academic Year: {application?.academicYear || '2026-2027'}
             </p>
           </div>
         </div>

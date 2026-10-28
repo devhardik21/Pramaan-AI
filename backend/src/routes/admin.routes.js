@@ -10,6 +10,7 @@ const {
   updateRule,
   listChecklists,
   createChecklist,
+  listInstitutions,
 } = require('../controllers/admin.controller');
 const { authenticate, authorize } = require('../middleware/auth');
 
@@ -17,6 +18,8 @@ router.use(authenticate, authorize('admin'));
 
 router.get('/users', listUsers);
 router.patch('/users/:id/role', updateUserRole);
+
+router.get('/institutions', listInstitutions);
 
 router.get('/categories', listCategories);
 router.post('/categories', createCategory);

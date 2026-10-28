@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Building2, BookOpen, User, MapPin, CheckCircle,
@@ -20,6 +20,18 @@ export default function NewApplicationPage() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    applicationsAPI.listCategories()
+      .then((res) => {
+        const cats = res.data?.data || res.data || [];
+        if (Array.isArray(cats) && cats.length > 0) {
+          setCategories(cats);
+        }
+      })
+      .catch((err) => console.log('Could not load categories', err));
+  }, []);
 
   const [formData, setFormData] = useState({
     applicationType: 'extension_of_approval',
@@ -88,9 +100,19 @@ export default function NewApplicationPage() {
       setSubmitting(true);
       setError(null);
 
+      // Map or resolve categoryId
+      const matchedCat = categories.find(
+        (c) =>
+          c._id === formData.applicationType ||
+          c.code.toLowerCase() === formData.applicationType.toLowerCase() ||
+          c.name.toLowerCase() === formData.applicationType.toLowerCase()
+      );
+
       const payload = {
         applicationType: formData.applicationType,
         academicYear: formData.academicYear,
+        categoryId: matchedCat ? matchedCat._id : undefined,
+        category: matchedCat ? matchedCat._id : formData.applicationType,
         institutionDetails: formData.institutionDetails,
         contactPerson: formData.contactPerson,
         programmes: formData.programmes,
@@ -142,17 +164,27 @@ export default function NewApplicationPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="form-label">Application Type *</label>
+              <label className="form-label">Application Category / Type *</label>
               <select
                 className="form-select text-xs"
                 value={formData.applicationType}
                 onChange={(e) => handleInputChange(null, 'applicationType', e.target.value)}
               >
-                <option value="extension_of_approval">Extension of Approval (EoA)</option>
-                <option value="new_institution">Establishment of New Institution</option>
-                <option value="increase_in_intake">Increase in Intake / Additional Course</option>
-                <option value="introduction_of_new_course">Introduction of New Course / Division</option>
-                <option value="closure_of_course">Closure of Course / Institution</option>
+                {categories.length > 0 ? (
+                  categories.map((cat) => (
+                    <option key={cat._id} value={cat.code.toLowerCase()}>
+                      {cat.name} ({cat.code})
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="extension_of_approval">Extension of Approval (EoA)</option>
+                    <option value="new_institution">Establishment of New Institution</option>
+                    <option value="increase_in_intake">Increase in Intake / Additional Course</option>
+                    <option value="introduction_of_new_course">Introduction of New Course / Division</option>
+                    <option value="closure_of_course">Closure of Course / Institution</option>
+                  </>
+                )}
               </select>
             </div>
 

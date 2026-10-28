@@ -190,7 +190,7 @@ export default function ApplicationsListPage() {
                       </Link>
                     </td>
                     <td className="py-3 px-4 font-medium text-slate-900">
-                      {app.institutionId?.name || app.institutionDetails?.name || 'Institutional Submission'}
+                      {app.institution?.name || app.institutionId?.name || app.institutionDetails?.name || 'Institutional Submission'}
                     </td>
                     <td className="py-3 px-4 capitalize text-slate-600">
                       {app.applicationType?.replace(/_/g, ' ')}

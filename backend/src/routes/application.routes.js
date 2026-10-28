@@ -10,6 +10,7 @@ const {
   getAllFindings,
   getAudit,
   requestRectification,
+  listCategories,
 } = require('../controllers/application.controller');
 const { uploadDocument, listApplicationDocuments } = require('../controllers/document.controller');
 const { runValidation } = require('../controllers/validation.controller');
@@ -17,6 +18,9 @@ const { authenticate, authorize } = require('../middleware/auth');
 const { documentUpload, handleUploadError } = require('../middleware/upload');
 
 router.use(authenticate);
+
+// Category listing for applications
+router.get('/categories', listCategories);
 
 // Global findings monitor (placed before /:id routes)
 router.get('/findings/all', getAllFindings);
